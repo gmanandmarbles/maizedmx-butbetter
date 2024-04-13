@@ -5,6 +5,14 @@ def save_to_json(data):
     with open('midi_actions.json', 'w') as f:
         json.dump(data, f)
 
+def load_from_json():
+    try:
+        with open('midi_actions.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Error: midi_actions.json file not found.")
+        return {}
+
 def note_name_from_decimal(decimal_note):
     # Converts decimal MIDI note to its corresponding note name
     note_number = int(decimal_note)
@@ -32,7 +40,9 @@ if ports:
         print("Invalid port number selected.")
         exit()
     
-    actions = {}
+    actions = load_from_json()
+    controller_number = None
+    controller_function = None
 
     while True:
         m = midiin.getMessage(250) # some timeout in ms
@@ -44,7 +54,12 @@ if ports:
                 actions[note_name] = action_value
                 save_to_json(actions)
             elif m.isController():
-                print('CONTROLLER', m.getControllerNumber(), m.getControllerValue())
+                new_controller_number = m.getControllerNumber()
+                if new_controller_number != controller_number:
+                    controller_number = new_controller_number
+                    controller_function = input(f"Enter the function name for controller {controller_number}: ")
+                actions[f"CONTROLLER {controller_number}"] = controller_function
+                save_to_json(actions)
 else:
     print('NO MIDI INPUT PORTS!')
 
